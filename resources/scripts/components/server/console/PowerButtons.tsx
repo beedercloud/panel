@@ -4,6 +4,13 @@ import Can from '@/components/elements/Can';
 import { ServerContext } from '@/state/server';
 import { PowerAction } from '@/components/server/console/ServerConsoleContainer';
 import { Dialog } from '@/components/elements/dialog';
+import {
+    BanIcon,
+    PlayIcon,
+    RefreshIcon,
+    StopIcon,
+} from '@heroicons/react/outline';
+import buttonStyles from '@/components/elements/button/style.module.css';
 
 interface PowerButtonProps {
     className?: string;
@@ -50,25 +57,38 @@ export default ({ className }: PowerButtonProps) => {
             </Dialog.Confirm>
             <Can action={'control.start'}>
                 <Button
-                    className={'flex-1'}
+                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
                     disabled={status !== 'offline'}
                     onClick={onButtonClick.bind(this, 'start')}
+                    aria-label={'Start'}
+                    title={'Start'}
                 >
-                    Start
+                    <PlayIcon className={'w-5 h-5'} />
+                    <span className={'text-sm font-semibold'}>Start</span>
                 </Button>
             </Can>
             <Can action={'control.restart'}>
-                <Button.Text className={'flex-1'} disabled={!status} onClick={onButtonClick.bind(this, 'restart')}>
-                    Restart
+                <Button.Text
+                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
+                    disabled={!status}
+                    onClick={onButtonClick.bind(this, 'restart')}
+                    aria-label={'Restart'}
+                    title={'Restart'}
+                >
+                    <RefreshIcon className={'w-5 h-5'} />
+                    <span className={'text-sm font-semibold'}>Restart</span>
                 </Button.Text>
             </Can>
             <Can action={'control.stop'}>
                 <Button.Danger
-                    className={'flex-1'}
+                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
                     disabled={status === 'offline'}
                     onClick={onButtonClick.bind(this, killable ? 'kill' : 'stop')}
+                    aria-label={killable ? 'Kill' : 'Stop'}
+                    title={killable ? 'Kill' : 'Stop'}
                 >
-                    {killable ? 'Kill' : 'Stop'}
+                    {killable ? <BanIcon className={'w-5 h-5'} /> : <StopIcon className={'w-5 h-5'} />}
+                    <span className={'text-sm font-semibold'}>{killable ? 'Kill' : 'Stop'}</span>
                 </Button.Danger>
             </Can>
         </div>

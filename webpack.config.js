@@ -20,6 +20,7 @@ module.exports = {
         chunkFilename: isProduction ? '[name].[chunkhash:8].js' : '[name].[fullhash:8].js',
         publicPath: process.env.WEBPACK_PUBLIC_PATH || '/assets/',
         crossOriginLoading: 'anonymous',
+        hashFunction: 'xxhash64',
     },
     module: {
         rules: [

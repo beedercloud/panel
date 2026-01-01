@@ -22,10 +22,15 @@ interface Values {
 }
 
 const ServerResult = styled(Link)`
-    ${tw`flex items-center bg-neutral-900 p-4 rounded border-l-4 border-neutral-900 no-underline transition-all duration-150`};
+    ${tw`flex items-center p-4 rounded-2xl no-underline transition`};
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
 
     &:hover {
-        ${tw`shadow border-cyan-500`};
+        background: var(--elevated);
+        border-color: var(--accent);
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
     }
 
     &:not(:last-of-type) {
@@ -107,8 +112,10 @@ export default ({ ...props }: Props) => {
                                     onClick={() => props.onDismissed()}
                                 >
                                     <div css={tw`flex-1 mr-4`}>
-                                        <p css={tw`text-sm`}>{server.name}</p>
-                                        <p css={tw`mt-1 text-xs text-neutral-400`}>
+                                        <p css={tw`text-sm`} style={{ color: 'var(--text-primary)' }}>
+                                            {server.name}
+                                        </p>
+                                        <p css={tw`mt-1 text-xs`} style={{ color: 'var(--text-muted)' }}>
                                             {server.allocations
                                                 .filter((alloc) => alloc.isDefault)
                                                 .map((allocation) => (
@@ -119,7 +126,14 @@ export default ({ ...props }: Props) => {
                                         </p>
                                     </div>
                                     <div css={tw`flex-none text-right`}>
-                                        <span css={tw`text-xs py-1 px-2 bg-cyan-800 text-cyan-100 rounded`}>
+                                        <span
+                                            css={tw`text-xs py-1 px-2 rounded`}
+                                            style={{
+                                                backgroundColor: 'var(--accent-soft)',
+                                                border: '1px solid var(--accent)',
+                                                color: 'var(--text-primary)',
+                                            }}
+                                        >
                                             {server.node}
                                         </span>
                                     </div>

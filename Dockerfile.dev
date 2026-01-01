@@ -1,0 +1,26 @@
+FROM php:8.3-cli
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        mariadb-client \
+        libpng-dev \
+        libzip-dev \
+        libxml2-dev \
+    && docker-php-ext-install bcmath gd pdo_mysql zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Disable SSL for mysql client to match local MariaDB defaults.
+RUN mkdir -p /etc/mysql/conf.d \
+    && printf "[client]\nssl=0\nssl-verify-server-cert=0\n" > /etc/mysql/conf.d/disable-ssl.cnf
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+EXPOSE 8000
+
+CMD ["composer", "install"]
+
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

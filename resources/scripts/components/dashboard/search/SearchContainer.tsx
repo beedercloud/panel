@@ -5,7 +5,11 @@ import useEventListener from '@/plugins/useEventListener';
 import SearchModal from '@/components/dashboard/search/SearchModal';
 import Tooltip from '@/components/elements/tooltip/Tooltip';
 
-export default () => {
+interface Props {
+    showLabel?: boolean;
+}
+
+export default ({ showLabel = true }: Props) => {
     const [visible, setVisible] = useState(false);
 
     useEventListener('keydown', (e: KeyboardEvent) => {
@@ -19,9 +23,10 @@ export default () => {
     return (
         <>
             {visible && <SearchModal appear visible={visible} onDismissed={() => setVisible(false)} />}
-            <Tooltip placement={'bottom'} content={'Search'}>
+            <Tooltip placement={'right'} content={'Search'}>
                 <div className={'navigation-link'} onClick={() => setVisible(true)}>
                     <FontAwesomeIcon icon={faSearch} />
+                    {showLabel && <span className={'nav-label'}>Search</span>}
                 </div>
             </Tooltip>
         </>
