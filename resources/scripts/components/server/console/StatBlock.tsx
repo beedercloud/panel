@@ -22,14 +22,8 @@ export default ({ title, copyOnClick, icon, color, className, children }: StatBl
         <CopyOnClick text={copyOnClick}>
             <div className={classNames(styles.stat_block, 'bg-gray-600', className)}>
                 <div className={classNames(styles.status_bar, color || 'bg-gray-700')} />
-                <div className={classNames(styles.icon, color || 'bg-gray-700')}>
-                    <Icon
-                        icon={icon}
-                        className={classNames({
-                            'text-gray-100': !color || color === 'bg-gray-700',
-                            'text-gray-50': color && color !== 'bg-gray-700',
-                        })}
-                    />
+                <div className={styles.icon_watermark}>
+                    <Icon icon={icon} />
                 </div>
                 <div className={'flex flex-col justify-center overflow-hidden w-full'}>
                     <p className={'font-header font-medium leading-tight text-xs md:text-sm text-gray-200'}>{title}</p>

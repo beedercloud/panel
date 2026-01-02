@@ -13,9 +13,43 @@ export default createGlobalStyle`
         unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
     }
 
+    :root {
+        --bg-0: #0b0d10;
+        --bg-1: #12161c;
+        --bg-2: #171c23;
+        --panel: #12161c;
+        --panel-strong: #1f2630;
+        --card: #171c23;
+        --elevated: #1f2630;
+        --border: #2a3340;
+        --divider: #202734;
+        --accent: #ffb703;
+        --accent-strong: #f6c230;
+        --accent-hover: #fbda4d;
+        --accent-active: #e4a91c;
+        --accent-soft: rgba(246, 194, 48, 0.18);
+        --text-primary: #e8eef6;
+        --text-secondary: #b7c0cc;
+        --text-muted: #7e8a99;
+        --text-on-primary: #0b0d10;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --error: #ef4444;
+        --info: #38bdf8;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+    }
+
     body {
-        ${tw`font-sans bg-neutral-800 text-neutral-200`};
+        ${tw`font-sans`};
+        color: var(--text-primary);
         letter-spacing: 0.015em;
+        background: radial-gradient(1200px 700px at 20% -10%, #1f2630 0%, var(--bg-0) 55%, #0b0d10 100%);
+    }
+
+    #app {
+        min-height: 100vh;
+        background: linear-gradient(160deg, rgba(18, 22, 28, 0.7), rgba(11, 13, 16, 0.95));
     }
 
     h1, h2, h3, h4, h5, h6 {
@@ -23,7 +57,12 @@ export default createGlobalStyle`
     }
 
     p {
-        ${tw`text-neutral-200 leading-snug font-sans`};
+        ${tw`leading-snug font-sans`};
+        color: var(--text-secondary);
+    }
+
+    a {
+        color: inherit;
     }
 
     form {
@@ -32,6 +71,22 @@ export default createGlobalStyle`
 
     textarea, select, input, button, button:focus, button:focus-visible {
         ${tw`outline-none`};
+    }
+
+    input, select, textarea {
+        border-radius: var(--radius-md);
+    }
+
+    button {
+        border-radius: var(--radius-md);
+    }
+
+    .rounded,
+    .rounded-md,
+    .rounded-lg,
+    .rounded-xl,
+    .rounded-2xl {
+        border-radius: var(--radius-lg) !important;
     }
 
     input[type=number]::-webkit-outer-spin-button,
@@ -56,7 +111,7 @@ export default createGlobalStyle`
         border-right-width: 4px;
         border-left-width: 4px;
         -webkit-border-radius: 9px 4px;
-        -webkit-box-shadow: inset 0 0 0 1px hsl(211, 10%, 53%), inset 0 0 0 4px hsl(209deg 18% 30%);
+        -webkit-box-shadow: inset 0 0 0 1px rgba(42, 51, 64, 0.7), inset 0 0 0 4px rgba(18, 22, 28, 0.9);
     }
 
     ::-webkit-scrollbar-track-piece {
