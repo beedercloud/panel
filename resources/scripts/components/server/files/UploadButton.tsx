@@ -2,17 +2,17 @@ import axios, { AxiosProgressEvent } from 'axios';
 import getFileUploadUrl from '@/api/server/files/getFileUploadUrl';
 import tw from 'twin.macro';
 import { Button } from '@/components/elements/button/index';
-import React, { useEffect, useRef } from 'react';
-import { ModalMask } from '@/components/elements/Modal';
-import Fade from '@/components/elements/Fade';
+import React, { useEffect, useRef, useState } from 'react';
 import useEventListener from '@/plugins/useEventListener';
 import { useFlashKey } from '@/plugins/useFlash';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
 import { ServerContext } from '@/state/server';
 import { WithClassname } from '@/components/types';
-import Portal from '@/components/elements/Portal';
 import { CloudUploadIcon } from '@heroicons/react/outline';
-import { useSignal } from '@preact/signals-react';
+import createDirectory from '@/api/server/files/createDirectory';
+import { dirname, join } from 'pathe';
+import Modal from '@/components/elements/Modal';
+import buttonStyles from '@/components/elements/button/style.module.css';
 
 function isFileOrDirectory(event: DragEvent): boolean {
     if (!event.dataTransfer?.types) {
@@ -24,9 +24,10 @@ function isFileOrDirectory(event: DragEvent): boolean {
 
 export default ({ className }: WithClassname) => {
     const fileUploadInput = useRef<HTMLInputElement>(null);
-
-    const visible = useSignal(false);
-    const timeouts = useSignal<NodeJS.Timeout[]>([]);
+    const folderUploadInput = useRef<HTMLInputElement>(null);
+    const timeouts = useRef<NodeJS.Timeout[]>([]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
 
     const { mutate } = useFileManagerSwr();
     const { addError, clearAndAddHttpError } = useFlashKey('files');
@@ -43,35 +44,87 @@ export default ({ className }: WithClassname) => {
             e.preventDefault();
             e.stopPropagation();
             if (isFileOrDirectory(e)) {
-                visible.value = true;
+                setModalOpen(true);
+                setDragActive(true);
             }
         },
         { capture: true }
     );
 
-    useEventListener('dragexit', () => (visible.value = false), { capture: true });
+    useEventListener(
+        'dragover',
+        (e) => {
+            if (isFileOrDirectory(e)) {
+                e.preventDefault();
+            }
+        },
+        { capture: true }
+    );
 
-    useEventListener('keydown', () => (visible.value = false));
+    useEventListener('dragleave', () => setDragActive(false), { capture: true });
+
+    useEventListener('drop', () => setDragActive(false), { capture: true });
+
+    useEventListener('keydown', () => setDragActive(false));
 
     useEffect(() => {
-        return () => timeouts.value.forEach(clearTimeout);
+        return () => timeouts.current.forEach(clearTimeout);
     }, []);
 
     const onUploadProgress = (data: AxiosProgressEvent, name: string) => {
         setUploadProgress({ name, loaded: data.loaded });
     };
 
-    const onFileSubmission = (files: FileList) => {
+    const ensureDirectories = async (paths: string[]) => {
+        const directories = new Set<string>();
+
+        paths.forEach((path) => {
+            const relativeDir = dirname(path);
+            if (!relativeDir || relativeDir === '.') {
+                return;
+            }
+
+            relativeDir
+                .split('/')
+                .filter(Boolean)
+                .reduce((acc, segment) => {
+                    const next = acc ? `${acc}/${segment}` : segment;
+                    directories.add(next);
+                    return next;
+                }, '');
+        });
+
+        const ordered = Array.from(directories).sort((a, b) => a.split('/').length - b.split('/').length);
+
+        for (const relativeDir of ordered) {
+            const parts = relativeDir.split('/');
+            const name = parts.pop()!;
+            const root = join(directory, parts.join('/'));
+
+            try {
+                await createDirectory(uuid, root, name);
+            } catch (error) {
+                // Ignore errors creating directories that already exist.
+            }
+        }
+    };
+
+    const onFileSubmission = async (files: FileList) => {
         clearAndAddHttpError();
         const list = Array.from(files);
-        if (list.some((file) => !file.type && (!file.size || file.size === 4096))) {
-            return addError('Folder uploads are not supported.', 'Error');
-        }
+        if (!list.length) return;
+
+        const relativePaths = list.map((file) => file.webkitRelativePath || file.name);
+        await ensureDirectories(relativePaths);
+        setModalOpen(false);
 
         const uploads = list.map((file) => {
+            const relativePath = file.webkitRelativePath || file.name;
+            const relativeDir = dirname(relativePath);
+            const uploadDirectory = relativeDir && relativeDir !== '.' ? join(directory, relativeDir) : directory;
             const controller = new AbortController();
             pushFileUpload({
-                name: file.name,
+                name: relativePath,
                 data: { abort: controller, loaded: 0, total: file.size },
             });
 
@@ -84,11 +137,11 @@ export default ({ className }: WithClassname) => {
                             {
                                 signal: controller.signal,
                                 headers: { 'Content-Type': 'multipart/form-data' },
-                                params: { directory },
-                                onUploadProgress: (data) => onUploadProgress(data, file.name),
+                                params: { directory: uploadDirectory },
+                                onUploadProgress: (data) => onUploadProgress(data, relativePath),
                             }
                         )
-                        .then(() => timeouts.value.push(setTimeout(() => removeFileUpload(file.name), 500)))
+                        .then(() => timeouts.current.push(setTimeout(() => removeFileUpload(relativePath), 500)))
                 );
         });
 
@@ -102,36 +155,52 @@ export default ({ className }: WithClassname) => {
 
     return (
         <>
-            <Portal>
-                <Fade appear in={visible.value} timeout={75} key={'upload_modal_mask'} unmountOnExit>
-                    <ModalMask
-                        onClick={() => (visible.value = false)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+            <Modal visible={modalOpen} onDismissed={() => setModalOpen(false)} closeOnBackground>
+                <div
+                    css={tw`flex flex-col items-center text-center space-y-4`}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                            visible.value = false;
-                            if (!e.dataTransfer?.files.length) return;
-
-                            onFileSubmission(e.dataTransfer.files);
+                        setDragActive(false);
+                        if (!e.dataTransfer?.files.length) return;
+                        onFileSubmission(e.dataTransfer.files);
+                    }}
+                >
+                    <div
+                        css={[tw`w-full border-2 border-dashed rounded-2xl px-8 py-10`]}
+                        style={{
+                            borderColor: dragActive ? 'var(--accent)' : 'var(--border)',
+                            background: dragActive ? 'rgba(31, 38, 48, 0.7)' : 'var(--panel-strong)',
                         }}
                     >
-                        <div className={'w-full flex items-center justify-center pointer-events-none'}>
-                            <div
-                                className={
-                                    'flex items-center space-x-4 bg-black w-full ring-4 ring-blue-200 ring-opacity-60 rounded p-6 mx-10 max-w-sm'
-                                }
-                            >
-                                <CloudUploadIcon className={'w-10 h-10 flex-shrink-0'} />
-                                <p className={'font-header flex-1 text-lg text-neutral-100 text-center'}>
-                                    Drag and drop files to upload.
-                                </p>
-                            </div>
-                        </div>
-                    </ModalMask>
-                </Fade>
-            </Portal>
+                        <CloudUploadIcon
+                            className={'w-12 h-12 mx-auto'}
+                            style={{ color: dragActive ? 'var(--accent)' : 'var(--text-secondary)' }}
+                        />
+                        <p css={tw`mt-4 text-base`} style={{ color: 'var(--text-primary)' }}>
+                            Drag & drop files or folders here
+                        </p>
+                        <p css={tw`mt-1 text-sm`} style={{ color: 'var(--text-secondary)' }}>
+                            or choose an option below to upload
+                        </p>
+                    </div>
+                    <div css={tw`flex items-center justify-center gap-3 flex-wrap`}>
+                        <Button className={buttonStyles.pill} onClick={() => fileUploadInput.current?.click()}>
+                            Select Files
+                        </Button>
+                        <Button className={buttonStyles.pill} onClick={() => folderUploadInput.current?.click()}>
+                            Select Folder
+                        </Button>
+                    </div>
+                    <p css={tw`text-xs`} style={{ color: 'var(--text-muted)' }}>
+                        Supports multiple files and folders in one upload.
+                    </p>
+                </div>
+            </Modal>
             <input
                 type={'file'}
                 ref={fileUploadInput}
@@ -141,12 +210,30 @@ export default ({ className }: WithClassname) => {
 
                     onFileSubmission(e.currentTarget.files);
                     if (fileUploadInput.current) {
-                        fileUploadInput.current.files = null;
+                        fileUploadInput.current.value = '';
                     }
                 }}
                 multiple
             />
-            <Button className={className} onClick={() => fileUploadInput.current && fileUploadInput.current.click()}>
+            <input
+                type={'file'}
+                ref={folderUploadInput}
+                css={tw`hidden`}
+                multiple
+                // @ts-expect-error vendor-specific directory upload attribute
+                webkitdirectory={'true'}
+                // @ts-expect-error non-standard attribute
+                directory={'true'}
+                onChange={(e) => {
+                    if (!e.currentTarget.files) return;
+
+                    onFileSubmission(e.currentTarget.files);
+                    if (folderUploadInput.current) {
+                        folderUploadInput.current.value = '';
+                    }
+                }}
+            />
+            <Button className={className} onClick={() => setModalOpen(true)}>
                 Upload
             </Button>
         </>

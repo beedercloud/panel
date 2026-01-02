@@ -60,10 +60,10 @@ module.exports = {
                 ],
             },
             {
-                test: /\.(png|jp(e?)g|gif)$/,
-                loader: 'file-loader',
-                options: {
-                    name: 'images/[name].[hash:8].[ext]',
+                test: /\.(png|jpe?g|gif)$/i,
+                type: 'asset/resource',
+                generator: {
+                    filename: 'images/[name].[hash:8][ext]',
                 },
             },
             {

@@ -39,30 +39,33 @@ export default ({ renderLeft, withinFileEditor, isNewFile }: Props) => {
 
     return (
         <div css={tw`flex flex-grow-0 items-center text-sm text-neutral-500 overflow-x-hidden`}>
-            {renderLeft || <div css={tw`w-12`} />}/<span css={tw`px-1 text-neutral-300`}>home</span>/
+            {renderLeft || <div css={tw`w-12`} />}
+            <span css={tw`px-1 text-neutral-300`}>home</span>
+            <span css={tw`px-1 text-neutral-500`}>/</span>
             <NavLink to={`/server/${id}/files`} css={tw`px-1 text-neutral-200 no-underline hover:text-neutral-100`}>
                 container
             </NavLink>
-            /
             {breadcrumbs().map((crumb, index) =>
                 crumb.path ? (
                     <React.Fragment key={index}>
+                        <span css={tw`px-1 text-neutral-500`}>/</span>
                         <NavLink
                             to={`/server/${id}/files#${encodePathSegments(crumb.path)}`}
                             css={tw`px-1 text-neutral-200 no-underline hover:text-neutral-100`}
                         >
                             {crumb.name}
                         </NavLink>
-                        /
                     </React.Fragment>
                 ) : (
-                    <span key={index} css={tw`px-1 text-neutral-300`}>
-                        {crumb.name}
-                    </span>
+                    <React.Fragment key={index}>
+                        <span css={tw`px-1 text-neutral-500`}>/</span>
+                        <span css={tw`px-1 text-neutral-300`}>{crumb.name}</span>
+                    </React.Fragment>
                 )
             )}
             {file && (
                 <React.Fragment>
+                    <span css={tw`px-1 text-neutral-500`}>/</span>
                     <span css={tw`px-1 text-neutral-300`}>{file}</span>
                 </React.Fragment>
             )}

@@ -11,6 +11,7 @@ import deleteFiles from '@/api/server/files/deleteFiles';
 import RenameFileModal from '@/components/server/files/RenameFileModal';
 import Portal from '@/components/elements/Portal';
 import { Dialog } from '@/components/elements/dialog';
+import buttonStyles from '@/components/elements/button/style.module.css';
 
 const MassActionsBar = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
@@ -95,10 +96,18 @@ const MassActionsBar = () => {
                 <Portal>
                     <div className={'pointer-events-none fixed bottom-0 mb-6 flex justify-center w-full z-50'}>
                         <Fade timeout={75} in={selectedFiles.length > 0} unmountOnExit>
-                            <div css={tw`flex items-center space-x-4 pointer-events-auto rounded p-4 bg-black/50`}>
-                                <Button onClick={() => setShowMove(true)}>Move</Button>
-                                <Button onClick={onClickCompress}>Archive</Button>
-                                <Button.Danger variant={Button.Variants.Secondary} onClick={() => setShowConfirm(true)}>
+                            <div css={tw`flex items-center space-x-4 pointer-events-auto rounded-full px-6 py-3 bg-black/50`}>
+                                <Button className={buttonStyles.pill} onClick={() => setShowMove(true)}>
+                                    Move
+                                </Button>
+                                <Button className={buttonStyles.pill} onClick={onClickCompress}>
+                                    Archive
+                                </Button>
+                                <Button.Danger
+                                    className={buttonStyles.pill}
+                                    variant={Button.Variants.Secondary}
+                                    onClick={() => setShowConfirm(true)}
+                                >
                                     Delete
                                 </Button.Danger>
                             </div>

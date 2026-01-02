@@ -1,5 +1,5 @@
 import React, { createRef } from 'react';
-import styled from 'styled-components/macro';
+import styled, { css } from 'styled-components/macro';
 import tw from 'twin.macro';
 import Fade from '@/components/elements/Fade';
 
@@ -9,12 +9,32 @@ interface Props {
 }
 
 export const DropdownButtonRow = styled.button<{ danger?: boolean }>`
-    ${tw`p-2 flex items-center rounded w-full text-neutral-500`};
+    ${tw`p-2 flex items-center rounded w-full text-sm`};
+    color: var(--text-secondary);
     transition: 150ms all ease;
 
     &:hover {
-        ${(props) => (props.danger ? tw`text-red-700 bg-red-100` : tw`text-neutral-700 bg-neutral-100`)};
+        color: var(--text-primary);
+        background: var(--panel-strong);
     }
+
+    ${(props) =>
+        props.danger &&
+        css`
+            &:hover {
+                color: var(--error);
+                background: rgba(239, 68, 68, 0.14);
+            }
+        `};
+`;
+
+const MenuContainer = styled.div`
+    ${tw`absolute p-2 z-50`};
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    color: var(--text-secondary);
 `;
 
 interface State {
@@ -87,17 +107,16 @@ class DropdownMenu extends React.PureComponent<Props, State> {
             <div>
                 {this.props.renderToggle(this.onClickHandler)}
                 <Fade timeout={150} in={this.state.visible} unmountOnExit>
-                    <div
+                    <MenuContainer
                         ref={this.menu}
                         onClick={(e) => {
                             e.stopPropagation();
                             this.setState({ visible: false });
                         }}
                         style={{ width: '12rem' }}
-                        css={tw`absolute bg-white p-2 rounded border border-neutral-700 shadow-lg text-neutral-500 z-50`}
                     >
                         {this.props.children}
-                    </div>
+                    </MenuContainer>
                 </Fade>
             </div>
         );

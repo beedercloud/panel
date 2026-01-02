@@ -3,12 +3,16 @@
 }
 
 .panel {
-    @apply relative bg-gray-600 rounded max-w-xl w-full mx-auto shadow-lg text-left;
-    @apply ring-4 ring-gray-800 ring-opacity-80;
+    @apply relative max-w-xl w-full mx-auto text-left;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
 
 .title {
-    @apply font-header text-xl font-medium mb-2 text-gray-50 pr-4;
+    @apply font-header text-xl font-medium mb-2 pr-4;
+    color: var(--text-primary);
 }
 
 .close_icon {
@@ -17,20 +21,26 @@
 
 .dialog_icon {
     @apply flex items-center justify-center w-10 h-10 rounded-full mr-4;
+    background: var(--panel-strong);
+    color: var(--text-primary);
 
     &.danger {
-        @apply bg-red-500 text-red-50;
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--error);
     }
 
     &.warning {
-        @apply bg-yellow-600 text-yellow-50;
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning);
     }
 
     &.success {
-        @apply bg-green-600 text-green-50;
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--success);
     }
 
     &.info {
-        @apply bg-primary-500 text-primary-50;
+        background: rgba(56, 189, 248, 0.2);
+        color: var(--info);
     }
 }
