@@ -14,9 +14,34 @@
     }
 }
 
+.file_list {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+    background: var(--card);
+}
+
 .file_row {
-    @apply flex items-center cursor-pointer bg-neutral-700 rounded-sm mb-px text-sm no-underline;
-    @apply hover:text-neutral-100 hover:bg-neutral-600;
+    @apply relative flex items-center cursor-pointer text-sm no-underline;
+    background: var(--card);
+    border-bottom: 1px solid var(--divider);
+    overflow: visible;
+
+    &:hover {
+        color: var(--text-primary);
+        background: var(--panel-strong);
+    }
+
+    &:first-child {
+        border-top-left-radius: var(--radius-lg);
+        border-top-right-radius: var(--radius-lg);
+    }
+
+    &:last-child {
+        border-bottom-left-radius: var(--radius-lg);
+        border-bottom-right-radius: var(--radius-lg);
+        border-bottom: none;
+    }
 
     & > .details {
         @apply flex flex-1 items-center text-neutral-300 no-underline px-4 py-2 overflow-hidden truncate;

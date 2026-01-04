@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import getFileContents from '@/api/server/files/getFileContents';
 import { httpErrorToHuman } from '@/api/http';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -20,6 +20,57 @@ import ErrorBoundary from '@/components/elements/ErrorBoundary';
 import { encodePathSegments, hashToPath } from '@/helpers';
 import { dirname } from 'pathe';
 import CodemirrorEditor from '@/components/elements/CodemirrorEditor';
+import { css } from 'styled-components/macro';
+import Icon from '@/components/elements/Icon';
+import type CodeMirror from 'codemirror';
+import { faArrowLeft, faRedo, faUndo } from '@fortawesome/free-solid-svg-icons';
+
+const editorControlStyles = css`
+    border-radius: 9999px;
+    background-color: var(--panel-strong);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    min-height: 40px;
+    padding: 0.55rem 1rem;
+`;
+
+const editorPrimaryButtonStyles = css`
+    border-radius: 9999px;
+    background: var(--accent-strong);
+    border-color: var(--accent-active);
+    color: var(--text-on-primary);
+    min-height: 40px;
+    padding: 0.55rem 1.25rem;
+
+    &:hover:not(:disabled) {
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
+    }
+
+    &:active:not(:disabled) {
+        background: var(--accent-active);
+        border-color: var(--accent-active);
+    }
+`;
+
+const editorIconButtonStyles = css`
+    ${tw`inline-flex items-center justify-center`};
+    width: 34px;
+    height: 34px;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    transition: color 150ms ease, transform 150ms ease;
+
+    &:hover:not(:disabled) {
+        color: var(--text-primary);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(1px);
+    }
+`;
 
 export default () => {
     const [error, setError] = useState('');
@@ -36,8 +87,21 @@ export default () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const setDirectory = ServerContext.useStoreActions((actions) => actions.files.setDirectory);
     const { addError, clearFlashes } = useFlash();
+    const editorRef = useRef<CodeMirror.Editor | null>(null);
 
     let fetchFileContent: null | (() => Promise<string>) = null;
+
+    const goBackToDirectory = () => {
+        const path = hashToPath(hash);
+        const parent = dirname(path);
+
+        if (!parent || parent === '.' || parent === '/') {
+            history.push(`/server/${id}/files`);
+            return;
+        }
+
+        history.push(`/server/${id}/files#${encodePathSegments(parent)}`);
+    };
 
     useEffect(() => {
         if (action === 'new') return;
@@ -88,7 +152,23 @@ export default () => {
             <FlashMessageRender byKey={'files:view'} css={tw`mb-4`} />
             <ErrorBoundary>
                 <div css={tw`mb-4`}>
-                    <FileManagerBreadcrumbs withinFileEditor isNewFile={action !== 'edit'} />
+                    <FileManagerBreadcrumbs
+                        withinFileEditor
+                        isNewFile={action !== 'edit'}
+                        renderLeft={
+                            <div css={tw`w-12 flex items-center justify-center`}>
+                                <button
+                                    type={'button'}
+                                    css={editorIconButtonStyles}
+                                    onClick={goBackToDirectory}
+                                    aria-label={'Back to folder'}
+                                    title={'Back to folder'}
+                                >
+                                    <Icon icon={faArrowLeft} className={'w-4 h-4'} />
+                                </button>
+                            </div>
+                        }
+                    />
                 </div>
             </ErrorBoundary>
             {hash.replace(/^#/, '').endsWith('.pteroignore') && (
@@ -117,6 +197,9 @@ export default () => {
                     filename={hash.replace(/^#/, '')}
                     onModeChanged={setMode}
                     initialContent={content}
+                    onEditorReady={(instance) => {
+                        editorRef.current = instance;
+                    }}
                     fetchContent={(value) => {
                         fetchFileContent = value;
                     }}
@@ -129,9 +212,33 @@ export default () => {
                     }}
                 />
             </div>
-            <div css={tw`flex justify-end mt-4`}>
-                <div css={tw`flex-1 sm:flex-none rounded bg-neutral-900 mr-4`}>
-                    <Select value={mode} onChange={(e) => setMode(e.currentTarget.value)}>
+            <div css={tw`flex flex-col gap-4 mt-4 sm:flex-row sm:items-center sm:justify-end`}>
+                <div css={tw`flex items-center gap-3`}>
+                    <button
+                        type={'button'}
+                        css={editorIconButtonStyles}
+                        onClick={() => editorRef.current?.undo()}
+                        aria-label={'Undo'}
+                        title={'Undo'}
+                    >
+                        <Icon icon={faUndo} className={'w-4 h-4'} />
+                    </button>
+                    <button
+                        type={'button'}
+                        css={editorIconButtonStyles}
+                        onClick={() => editorRef.current?.redo()}
+                        aria-label={'Redo'}
+                        title={'Redo'}
+                    >
+                        <Icon icon={faRedo} className={'w-4 h-4'} />
+                    </button>
+                </div>
+                <div css={tw`w-full sm:w-auto`}>
+                    <Select
+                        value={mode}
+                        css={editorControlStyles}
+                        onChange={(e) => setMode(e.currentTarget.value)}
+                    >
                         {modes.map((mode) => (
                             <option key={`${mode.name}_${mode.mime}`} value={mode.mime}>
                                 {mode.name}
@@ -141,13 +248,16 @@ export default () => {
                 </div>
                 {action === 'edit' ? (
                     <Can action={'file.update'}>
-                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => save()}>
+                        <Button css={[tw`w-full sm:w-auto`, editorPrimaryButtonStyles]} onClick={() => save()}>
                             Save Content
                         </Button>
                     </Can>
                 ) : (
                     <Can action={'file.create'}>
-                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => setModalVisible(true)}>
+                        <Button
+                            css={[tw`w-full sm:w-auto`, editorPrimaryButtonStyles]}
+                            onClick={() => setModalVisible(true)}
+                        >
                             Create File
                         </Button>
                     </Can>

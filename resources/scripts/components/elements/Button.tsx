@@ -16,20 +16,39 @@ const ButtonStyle = styled.button<Omit<Props, 'isLoading'>>`
     ${(props) =>
         ((!props.isSecondary && !props.color) || props.color === 'primary') &&
         css<Props>`
-            ${(props) => !props.isSecondary && tw`bg-primary-500 border-primary-600 border text-primary-50`};
+            ${(props) =>
+                !props.isSecondary &&
+                css`
+                    background: var(--accent-strong);
+                    border-color: var(--accent-strong);
+                    color: var(--text-on-primary);
+                `};
 
             &:hover:not(:disabled) {
-                ${tw`bg-primary-600 border-primary-700`};
+                background: var(--accent-hover);
+                border-color: var(--accent-hover);
+            }
+
+            &:active:not(:disabled) {
+                background: var(--accent-active);
+                border-color: var(--accent-active);
+            }
+
+            &:focus {
+                box-shadow: 0 0 0 3px rgba(246, 194, 48, 0.35);
             }
         `};
 
     ${(props) =>
         props.color === 'grey' &&
         css`
-            ${tw`border-neutral-600 bg-neutral-500 text-neutral-50`};
+            background: var(--elevated);
+            border-color: var(--border);
+            color: var(--text-secondary);
 
             &:hover:not(:disabled) {
-                ${tw`bg-neutral-600 border-neutral-700`};
+                background: #242c38;
+                color: var(--text-primary);
             }
         `};
 
@@ -77,12 +96,21 @@ const ButtonStyle = styled.button<Omit<Props, 'isLoading'>>`
     ${(props) =>
         props.isSecondary &&
         css<Props>`
-            ${tw`border-neutral-600 bg-transparent text-neutral-200`};
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text-secondary);
 
             &:hover:not(:disabled) {
-                ${tw`border-neutral-500 text-neutral-100`};
+                border-color: var(--accent-strong);
+                color: var(--text-primary);
                 ${(props) => props.color === 'red' && tw`bg-red-500 border-red-600 text-red-50`};
-                ${(props) => props.color === 'primary' && tw`bg-primary-500 border-primary-600 text-primary-50`};
+                ${(props) =>
+                props.color === 'primary' &&
+                css`
+                        background: var(--accent-strong);
+                        border-color: var(--accent-strong);
+                        color: var(--text-on-primary);
+                    `};
                 ${(props) => props.color === 'green' && tw`bg-green-500 border-green-600 text-green-50`};
             }
         `};

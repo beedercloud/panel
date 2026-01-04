@@ -43,6 +43,23 @@ const Sidebar = styled.aside`
     border-color: var(--border);
     transition: width 180ms ease;
     will-change: width;
+    contain: layout paint;
+
+    @media (max-width: 1024px) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: min(82vw, 320px);
+        transform: translateX(-100%);
+        transition: transform 220ms ease;
+        will-change: transform;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+    }
+
+    &.mobile-open {
+        transform: translateX(0);
+    }
 `;
 
 const NavGroup = styled.div`
@@ -120,6 +137,8 @@ export default () => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
     const location = useLocation();
     const serverMatch = useRouteMatch<{ id: string }>('/server/:id');
     const hasContextNav = location.pathname.startsWith('/account') || !!serverMatch;
@@ -130,6 +149,26 @@ export default () => {
         return () => clearTimeout(timer);
     }, [isAnimating]);
 
+    React.useEffect(() => {
+        const media = window.matchMedia('(max-width: 1024px)');
+        const onChange = () => setIsMobile(media.matches);
+
+        onChange();
+
+        if (media.addEventListener) {
+            media.addEventListener('change', onChange);
+            return () => media.removeEventListener('change', onChange);
+        }
+
+        media.addListener(onChange);
+        return () => media.removeListener(onChange);
+    }, []);
+
+    React.useEffect(() => {
+        if (!isMobile) return;
+        setMobileOpen(false);
+    }, [isMobile, location.pathname]);
+
     const onTriggerLogout = () => {
         setIsLoggingOut(true);
         http.post('/auth/logout').finally(() => {
@@ -138,21 +177,52 @@ export default () => {
         });
     };
 
+    const sidebarCollapsed = collapsed && !isMobile;
+
     return (
-        <Sidebar className={classNames(collapsed ? 'w-20' : 'w-64', !isAnimating && 'backdrop-blur')}>
+        <>
+            {isMobile && mobileOpen && (
+                <button
+                    type={'button'}
+                    className={'fixed inset-0 z-30 cursor-default bg-black/50'}
+                    onClick={() => setMobileOpen(false)}
+                    aria-label={'Close navigation'}
+                />
+            )}
+            {isMobile && !mobileOpen && (
+                <button
+                    type={'button'}
+                    className={
+                        'fixed left-4 top-4 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--panel)] text-[var(--text-primary)] shadow-lg'
+                    }
+                    onClick={() => setMobileOpen(true)}
+                    aria-label={'Open navigation'}
+                >
+                    <FontAwesomeIcon icon={faBars} />
+                </button>
+            )}
+            <Sidebar
+                className={classNames(
+                    !isMobile && (sidebarCollapsed ? 'w-20' : 'w-64'),
+                    isMobile && 'mobile-nav',
+                    isMobile && mobileOpen && 'mobile-open',
+                    !isMobile && !isAnimating && 'backdrop-blur'
+                )}
+                aria-hidden={isMobile && !mobileOpen}
+            >
             <SpinnerOverlay visible={isLoggingOut} />
             <div
                 className={classNames(
-                    'flex items-center py-3',
-                    collapsed ? 'px-2 justify-between' : 'px-4 gap-3'
+                    'flex items-center h-12 sm:h-14',
+                    sidebarCollapsed ? 'px-2 justify-between' : 'px-4 gap-3'
                 )}
             >
                 <img
                     src={logo}
                     alt={`${name} logo`}
-                    className={classNames('object-contain', collapsed ? 'h-8 w-8' : 'h-9 w-9')}
+                    className={classNames('object-contain', sidebarCollapsed ? 'h-8 w-8' : 'h-9 w-9')}
                 />
-                {!collapsed && (
+                {!sidebarCollapsed && (
                     <Link to={'/'} className={'text-base font-header font-semibold text-[var(--text-primary)] no-underline'}>
                         {name}
                     </Link>
@@ -160,9 +230,14 @@ export default () => {
                 <button
                     className={classNames(
                         'h-8 w-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--elevated)] transition',
-                        collapsed ? '' : 'ml-auto'
+                        sidebarCollapsed ? '' : 'ml-auto'
                     )}
                     onClick={() => {
+                        if (isMobile) {
+                            setMobileOpen((state) => !state);
+                            return;
+                        }
+
                         setIsAnimating(true);
                         setCollapsed((state) => !state);
                     }}
@@ -175,11 +250,11 @@ export default () => {
             <div className={'flex flex-col flex-1 min-h-0'}>
                 <div className={'flex-1 min-h-0 overflow-y-auto pb-4'}>
                     <NavGroup>
-                        <NavItem className={collapsed ? 'nav-collapsed' : undefined}>
-                            <SearchContainer />
+                        <NavItem className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                            <SearchContainer showLabel={!sidebarCollapsed} />
                         </NavItem>
-                        <NavItem className={collapsed ? 'nav-collapsed' : undefined}>
-                            {collapsed ? (
+                        <NavItem className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                            {sidebarCollapsed ? (
                                 <Tooltip placement={'right'} content={'Dashboard'}>
                                     <NavLink to={'/'} exact>
                                         <FontAwesomeIcon icon={faTachometerAlt} />
@@ -194,8 +269,8 @@ export default () => {
                             )}
                         </NavItem>
                         {rootAdmin && (
-                            <NavItem className={collapsed ? 'nav-collapsed' : undefined}>
-                                {collapsed ? (
+                            <NavItem className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                                {sidebarCollapsed ? (
                                     <Tooltip placement={'right'} content={'Admin'}>
                                         <a href={'/admin'} rel={'noreferrer'}>
                                             <FontAwesomeIcon icon={faCogs} />
@@ -217,8 +292,8 @@ export default () => {
                             {routes.account
                                 .filter((route) => !!route.name)
                                 .map(({ path, name: routeName, exact = false }) => (
-                                    <NavItem key={path} className={collapsed ? 'nav-collapsed' : undefined}>
-                                        {collapsed ? (
+                                    <NavItem key={path} className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                                        {sidebarCollapsed ? (
                                             <Tooltip placement={'right'} content={routeName}>
                                                 <NavLink to={`/account/${path}`.replace('//', '/')} exact={exact}>
                                                     <FontAwesomeIcon
@@ -246,8 +321,8 @@ export default () => {
                                 .map((route) =>
                                     route.permission ? (
                                         <Can key={route.path} action={route.permission} matchAny>
-                                            <NavItem className={collapsed ? 'nav-collapsed' : undefined}>
-                                                {collapsed ? (
+                                            <NavItem className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                                                {sidebarCollapsed ? (
                                                     <Tooltip placement={'right'} content={route.name}>
                                                         <NavLink
                                                             to={`${serverMatch.url}${route.path}`}
@@ -270,8 +345,8 @@ export default () => {
                                             </NavItem>
                                         </Can>
                                     ) : (
-                                        <NavItem key={route.path} className={collapsed ? 'nav-collapsed' : undefined}>
-                                            {collapsed ? (
+                                        <NavItem key={route.path} className={sidebarCollapsed ? 'nav-collapsed' : undefined}>
+                                            {sidebarCollapsed ? (
                                                 <Tooltip placement={'right'} content={route.name}>
                                                     <NavLink to={`${serverMatch.url}${route.path}`} exact={route.exact}>
                                                         <FontAwesomeIcon
@@ -296,17 +371,17 @@ export default () => {
                 </div>
                 <div className={'px-3 py-3'}>
                     <Menu as={'div'} className={'relative w-full'}>
-                        <Menu.Button className={classNames('w-full', collapsed ? 'flex justify-center' : '')}>
+                        <Menu.Button className={classNames('w-full', sidebarCollapsed ? 'flex justify-center' : '')}>
                             <div
                                 className={classNames(
                                     'flex items-center w-full gap-3 rounded-xl border bg-[var(--elevated)] border-[var(--border)]',
-                                    collapsed ? 'p-2 justify-center min-h-[52px]' : 'px-3 py-2'
+                                    sidebarCollapsed ? 'p-2 justify-center min-h-[52px]' : 'px-3 py-2'
                                 )}
                             >
                                 <span className={'w-9 h-9 rounded-full overflow-hidden ring-1 ring-white/10'}>
                                     <Avatar.User variant={'beam'} size={36} />
                                 </span>
-                                {!collapsed && (
+                                {!sidebarCollapsed && (
                                     <>
                                         <div className={'flex-1 text-left'}>
                                             <div className={'text-sm font-semibold text-[var(--text-primary)]'}>
@@ -372,6 +447,7 @@ export default () => {
                     </Menu>
                 </div>
             </div>
-        </Sidebar>
+            </Sidebar>
+        </>
     );
 };

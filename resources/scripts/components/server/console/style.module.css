@@ -1,8 +1,9 @@
 .stat_block {
     @apply flex items-center rounded-xl relative overflow-hidden;
-    @apply col-span-3 md:col-span-2 lg:col-span-6;
+    @apply col-span-1 sm:col-span-3 md:col-span-2 lg:col-span-6;
     @apply px-3 py-3 md:p-4 lg:p-5;
     @apply border border-neutral-800;
+    @apply min-h-[86px];
     background: linear-gradient(135deg, rgba(19, 26, 41, 0.9), rgba(12, 17, 27, 0.95));
     box-shadow: 0 8px 22px rgba(5, 8, 13, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 
@@ -19,6 +20,12 @@
             width: 64px;
             height: 64px;
         }
+    }
+}
+
+@media (max-width: 640px) {
+    .stat_block:last-child {
+        grid-column: span 2 / span 2;
     }
 }
 

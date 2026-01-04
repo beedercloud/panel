@@ -29,7 +29,7 @@ export const DropdownButtonRow = styled.button<{ danger?: boolean }>`
 `;
 
 const MenuContainer = styled.div`
-    ${tw`absolute p-2 z-50`};
+    ${tw`fixed p-2 z-50`};
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -39,6 +39,7 @@ const MenuContainer = styled.div`
 
 interface State {
     posX: number;
+    posY: number;
     visible: boolean;
 }
 
@@ -47,6 +48,7 @@ class DropdownMenu extends React.PureComponent<Props, State> {
 
     state: State = {
         posX: 0,
+        posY: 0,
         visible: false,
     };
 
@@ -60,7 +62,21 @@ class DropdownMenu extends React.PureComponent<Props, State> {
         if (this.state.visible && !prevState.visible && menu) {
             document.addEventListener('click', this.windowListener);
             document.addEventListener('contextmenu', this.contextMenuListener);
-            menu.style.left = `${Math.round(this.state.posX - menu.clientWidth)}px`;
+            const padding = 8;
+            const width = menu.clientWidth;
+            const height = menu.clientHeight;
+            const maxX = window.innerWidth - padding;
+            const maxY = window.innerHeight - padding;
+
+            let left = Math.round(this.state.posX - width);
+            let top = Math.round(this.state.posY);
+
+            if (left < padding) left = padding;
+            if (left + width > maxX) left = Math.max(padding, maxX - width);
+            if (top + height > maxY) top = Math.max(padding, this.state.posY - height);
+
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
         }
 
         if (!this.state.visible && prevState.visible) {
@@ -75,7 +91,7 @@ class DropdownMenu extends React.PureComponent<Props, State> {
 
     onClickHandler = (e: React.MouseEvent<any, MouseEvent>) => {
         e.preventDefault();
-        this.triggerMenu(e.clientX);
+        this.triggerMenu({ x: e.clientX, y: e.clientY });
     };
 
     contextMenuListener = () => this.setState({ visible: false });
@@ -96,9 +112,10 @@ class DropdownMenu extends React.PureComponent<Props, State> {
         }
     };
 
-    triggerMenu = (posX: number) =>
+    triggerMenu = (pos: { x: number; y: number }) =>
         this.setState((s) => ({
-            posX: !s.visible ? posX : s.posX,
+            posX: !s.visible ? pos.x : s.posX,
+            posY: !s.visible ? pos.y : s.posY,
             visible: !s.visible,
         }));
 

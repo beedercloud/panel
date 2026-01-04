@@ -10,8 +10,12 @@ RUN apt-get update \
         libpng-dev \
         libzip-dev \
         libxml2-dev \
-    && docker-php-ext-install bcmath gd pdo_mysql zip \
+        libcurl4-openssl-dev \
+    && docker-php-ext-install bcmath gd pdo_mysql zip pcntl curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Speed up the CLI server by enabling opcache for CLI.
+RUN printf "opcache.enable_cli=1\nopcache.validate_timestamps=1\nopcache.revalidate_freq=0\n" > /usr/local/etc/php/conf.d/opcache-cli.ini
 
 # Disable SSL for mysql client to match local MariaDB defaults.
 RUN mkdir -p /etc/mysql/conf.d \

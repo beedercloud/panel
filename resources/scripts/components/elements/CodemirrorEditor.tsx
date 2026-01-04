@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CodeMirror from 'codemirror';
 import styled from 'styled-components/macro';
 import tw from 'twin.macro';
@@ -85,23 +85,73 @@ const EditorContainer = styled.div`
     ${tw`relative`};
 
     > div {
-        ${tw`rounded h-full`};
+        ${tw`h-full`};
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: var(--card);
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(5, 8, 12, 0.4);
     }
 
     .CodeMirror {
+        height: 100%;
+        background: var(--card);
+        color: var(--text-primary);
         font-size: 12px;
         line-height: 1.375rem;
     }
 
+    .CodeMirror-scroll {
+        background: transparent;
+    }
+
+    .CodeMirror-gutters {
+        background: var(--panel);
+        border-right: 1px solid var(--divider);
+    }
+
     .CodeMirror-linenumber {
+        color: var(--text-muted);
         padding: 1px 12px 0 12px !important;
     }
 
     .CodeMirror-foldmarker {
-        color: #cbccc6;
+        color: var(--text-secondary);
         text-shadow: none;
         margin-left: 0.25rem;
         margin-right: 0.25rem;
+    }
+
+    .CodeMirror-guttermarker,
+    .CodeMirror-guttermarker-subtle {
+        color: var(--text-muted);
+    }
+
+    .CodeMirror-selected {
+        background: rgba(255, 183, 3, 0.14) !important;
+    }
+
+    .CodeMirror-line::selection,
+    .CodeMirror-line > span::selection,
+    .CodeMirror-line > span > span::selection {
+        background: rgba(255, 183, 3, 0.16);
+    }
+
+    .CodeMirror-cursor {
+        border-left: 2px solid var(--accent);
+    }
+
+    .CodeMirror-activeline-background {
+        background: rgba(32, 39, 52, 0.45);
+    }
+
+    .CodeMirror-matchingbracket {
+        color: var(--accent) !important;
+        background: rgba(255, 183, 3, 0.12);
+    }
+
+    .CodeMirror-nonmatchingbracket {
+        color: var(--error) !important;
     }
 `;
 
@@ -113,6 +163,7 @@ export interface Props {
     onModeChanged: (mode: string) => void;
     fetchContent: (callback: () => Promise<string>) => void;
     onContentSaved: () => void;
+    onEditorReady?: (editor: CodeMirror.Editor) => void;
 }
 
 const findModeByFilename = (filename: string) => {
@@ -143,40 +194,57 @@ const findModeByFilename = (filename: string) => {
     return undefined;
 };
 
-export default ({ style, initialContent, filename, mode, fetchContent, onContentSaved, onModeChanged }: Props) => {
+export default ({
+    style,
+    initialContent,
+    filename,
+    mode,
+    fetchContent,
+    onContentSaved,
+    onModeChanged,
+    onEditorReady,
+}: Props) => {
     const [editor, setEditor] = useState<CodeMirror.Editor>();
+    const editorRef = useRef<CodeMirror.Editor | null>(null);
+    const onEditorReadyRef = useRef<typeof onEditorReady>(onEditorReady);
+    onEditorReadyRef.current = onEditorReady;
 
-    const ref = useCallback((node) => {
-        if (!node) return;
+    const ref = useCallback(
+        (node) => {
+            if (!node || editorRef.current) return;
 
-        const e = CodeMirror.fromTextArea(node, {
-            mode: 'text/plain',
-            theme: 'ayu-mirage',
-            indentUnit: 4,
-            smartIndent: true,
-            tabSize: 4,
-            indentWithTabs: false,
-            lineWrapping: true,
-            lineNumbers: true,
-            foldGutter: true,
-            fixedGutter: true,
-            scrollbarStyle: 'overlay',
-            coverGutterNextToScrollbar: false,
-            readOnly: false,
-            showCursorWhenSelecting: false,
-            autofocus: false,
-            spellcheck: true,
-            autocorrect: false,
-            autocapitalize: false,
-            lint: false,
-            // @ts-expect-error this property is actually used, the d.ts file for CodeMirror is incorrect.
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
-        });
+            const e = CodeMirror.fromTextArea(node, {
+                mode: 'text/plain',
+                theme: 'ayu-mirage',
+                indentUnit: 4,
+                smartIndent: true,
+                tabSize: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                lineNumbers: true,
+                foldGutter: true,
+                fixedGutter: true,
+                scrollbarStyle: 'overlay',
+                coverGutterNextToScrollbar: false,
+                readOnly: false,
+                showCursorWhenSelecting: false,
+                autofocus: false,
+                spellcheck: true,
+                autocorrect: false,
+                autocapitalize: false,
+                lint: false,
+                // @ts-expect-error this property is actually used, the d.ts file for CodeMirror is incorrect.
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+            });
 
-        setEditor(e);
-    }, []);
+            editorRef.current = e;
+            setEditor(e);
+            onEditorReadyRef.current?.(e);
+        },
+        []
+    );
 
     useEffect(() => {
         if (filename === undefined) {
@@ -212,6 +280,15 @@ export default ({ style, initialContent, filename, mode, fetchContent, onContent
 
         fetchContent(() => Promise.resolve(editor.getValue()));
     }, [editor, fetchContent, onContentSaved]);
+
+    useEffect(() => {
+        return () => {
+            if (editorRef.current) {
+                editorRef.current.toTextArea();
+                editorRef.current = null;
+            }
+        };
+    }, []);
 
     return (
         <EditorContainer style={style}>

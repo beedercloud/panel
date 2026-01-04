@@ -57,7 +57,7 @@ export default ({ className }: PowerButtonProps) => {
             </Dialog.Confirm>
             <Can action={'control.start'}>
                 <Button
-                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
+                    className={`${buttonStyles.pill} w-full sm:w-auto shadow-lg ring-1 ring-white/10 gap-2`}
                     disabled={status !== 'offline'}
                     onClick={onButtonClick.bind(this, 'start')}
                     aria-label={'Start'}
@@ -69,7 +69,7 @@ export default ({ className }: PowerButtonProps) => {
             </Can>
             <Can action={'control.restart'}>
                 <Button.Text
-                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
+                    className={`${buttonStyles.pill} w-full sm:w-auto shadow-lg ring-1 ring-white/10 gap-2`}
                     disabled={!status}
                     onClick={onButtonClick.bind(this, 'restart')}
                     aria-label={'Restart'}
@@ -81,7 +81,7 @@ export default ({ className }: PowerButtonProps) => {
             </Can>
             <Can action={'control.stop'}>
                 <Button.Danger
-                    className={`${buttonStyles.pill} shadow-lg ring-1 ring-white/10 gap-2`}
+                    className={`${buttonStyles.pill} w-full sm:w-auto shadow-lg ring-1 ring-white/10 gap-2`}
                     disabled={status === 'offline'}
                     onClick={onButtonClick.bind(this, killable ? 'kill' : 'stop')}
                     aria-label={killable ? 'Kill' : 'Stop'}

@@ -74,7 +74,6 @@ export default () => {
             {({ isSubmitting, setSubmitting, submitForm }) => (
                 <LoginFormContainer title={'Request Password Reset'} css={tw`w-full flex`}>
                     <Field
-                        light
                         label={'Email'}
                         description={
                             'Enter your account email address to receive instructions on resetting your password.'
@@ -105,7 +104,10 @@ export default () => {
                     <div css={tw`mt-6 text-center`}>
                         <Link
                             to={'/auth/login'}
-                            css={tw`text-xs text-neutral-500 tracking-wide uppercase no-underline hover:text-neutral-700`}
+                            className={'text-xs tracking-wide uppercase no-underline'}
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                         >
                             Return to Login
                         </Link>

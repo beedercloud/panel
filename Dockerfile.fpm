@@ -1,0 +1,60 @@
+FROM php:8.3-fpm
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        mariadb-client \
+        libpng-dev \
+        libzip-dev \
+        libxml2-dev \
+        libcurl4-openssl-dev \
+        nginx \
+        supervisor \
+    && docker-php-ext-install bcmath gd pdo_mysql zip pcntl curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Disable SSL for mysql client to match local MariaDB defaults.
+RUN mkdir -p /etc/mysql/conf.d \
+    && printf "[client]\nssl=0\nssl-verify-server-cert=0\n" > /etc/mysql/conf.d/disable-ssl.cnf
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Nginx configuration
+RUN echo 'server { \n\
+    listen 8000; \n\
+    root /app/public; \n\
+    index index.php; \n\
+    client_max_body_size 100M; \n\
+    \n\
+    location / { \n\
+        try_files $uri $uri/ /index.php?$query_string; \n\
+    } \n\
+    \n\
+    location ~ \.php$ { \n\
+        fastcgi_pass 127.0.0.1:9000; \n\
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \n\
+        include fastcgi_params; \n\
+        fastcgi_read_timeout 300; \n\
+    } \n\
+}' > /etc/nginx/sites-available/default
+
+# Supervisor configuration
+RUN echo '[supervisord] \n\
+nodaemon=true \n\
+\n\
+[program:php-fpm] \n\
+command=php-fpm \n\
+autostart=true \n\
+autorestart=true \n\
+\n\
+[program:nginx] \n\
+command=nginx -g "daemon off;" \n\
+autostart=true \n\
+autorestart=true' > /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8000
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
